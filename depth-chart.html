@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>HTML5 Canvas绘制比特币交易深度图</title>
+<style type="text/css">
+.layout{
+	position:relative;	
+}
+
+.layout canvas{
+	position:absolute;	
+}
+
+.layout #x{
+	top:300px;
+	left:0;	
+}
+
+.layout #y{
+	top:0px;
+	left:600px;	
+}
+</style>
+</head>
+
+<body>
+<div class="layout">
+<canvas id="depth" width="600" height="300"></canvas>
+<canvas id="x" width="600" height="24"></canvas>
+<canvas id="y" width="48" height="300"></canvas>
+</div>
+
+<script>
+
+function drawDepthChart() {
+	var data = {
+		"sell":
+		[
+		{"price":9000,"amount":8176},
+		{"price":8999.84,"amount":10245},
+		{"price":8999.68,"amount":19147},
+		{"price":8999.52,"amount":4150},
+		{"price":8999.36,"amount":10420},
+		{"price":8999.2,"amount":16053},
+		{"price":8999.04,"amount":8480},
+		{"price":8998.88,"amount":12751},
+		{"price":8998.72,"amount":14187},
+		{"price":8998.56,"amount":7916}
+	],
+	"buy":[
+		{"price":8749,"amount":8379},
+		{"price":8748.74,"amount":18582},
+		{"price":8748.48,"amount":9173},
+		{"price":8748.22,"amount":13327},
+		{"price":8747.96,"amount":1990},
+		{"price":8747.7,"amount":3414},
+		{"price":8747.44,"amount":12062},
+		{"price":8747.18,"amount":19389},
+		{"price":8746.92,"amount":8999},
+		{"price":8746.66,"amount":8675}
+	]
+	};
+	
+	for(i in data['buy']){
+		var total = 0;
+		for(n=0; n<= i; n++){
+				total += data['buy'][n]['amount'];
+		}
+		
+		data['buy'][i]['total'] = total;
+	}
+	
+	for(i in data['sell']){
+		var total = 0;
+		for(n=i; n< data['sell'].length; n++){
+				total += data['sell'][n]['amount'];
+		}
+		
+		data['sell'][i]['total'] = total;
+	}
+	
+	
+	var gap = 10; //X轴偏移量 防止左右两部分连接以利于美观
+	var canvas=document.getElementById('depth');
+	var width = canvas.getAttribute('width');
+	var height = canvas.getAttribute('height');
+	
+	//计算交易量的最大值，作为纵坐标的最大刻度值	
+	var maxAmount = Math.max( data['sell'][0]['total'],  data['buy'][data['buy'].length-1]['total']);	
+	
+	var scaleH = maxAmount / height;
+	
+	//买卖各占一半宽度
+	var scaleW = width / 2 / data['sell'].length;
+	
+	var context=canvas.getContext('2d');	
+	
+	//开始一个连续绘制路径
+	context.beginPath();
+	context.fillStyle = '#9dd'; //设置买入区域填充颜色
+	var x = y  = 0;
+	context.moveTo(width/2-gap, height);
+	
+	//从中间向上、向左绘制买单图
+	for(i in data['buy']){
+		x = width/2 - i * scaleW-gap;
+		y = height - data['buy'][i]['total']/maxAmount*height;
+		context.lineTo(x, y);
+	}
+	
+	context.lineTo(0, y); //延伸到最左侧边缘
+	context.lineTo(0, height);
+	context.lineTo(width/2-gap, height);
+	context.fill(); //形成一个封装区域 并按fillStyle指定的颜色填充		
+	context.closePath();
+	
+	//同上 开始绘制卖单深度图
+	context.beginPath();
+	context.fillStyle = '#1aa';
+	context.moveTo(width/2+gap, height);
+	for(i in data['sell']){
+		var index =data['sell'].length - i -1;
+		x = width/2 + i * scaleW + gap;
+		y = height - data['sell'][index]['total']/maxAmount * height;
+		context.lineTo(x,y);
+	}
+	
+	context.lineTo(width+gap, y);
+	context.lineTo(width+gap, height);
+	context.lineTo(width/2+gap, height);
+	context.fill();	
+	context.closePath();
+	
+	//X轴刻度
+	var contextX = document.getElementById('x').getContext('2d');
+	var contextY = document.getElementById('y').getContext('2d');
+	contextX.fillStyle = '#ccc';
+	contextY.fillStyle = '#ccc';
+	
+	for(i in data['buy']){
+		if(i%3) continue;
+		x = width/2 - i * scaleW-30;
+		y = 12;
+		contextX.fillText(data['buy'][i]['price'], x, y);
+	}
+	
+	for(i in data['sell']){
+		if(i%3) continue;
+		x = width/2 + i * scaleW;
+		y = 12;
+		var index =data['sell'].length - i -1; 
+		contextX.fillText(data['sell'][index]['price'], x, y);
+	}
+	
+	//Y轴5等份
+	var seg = maxAmount/5;
+	for(i=1; i<6; i++){
+		x = 12;
+		y = height - seg*i/maxAmount * height;
+		contextY.fillText(seg*i > 1000 ? (seg*i/1000+'K'): seg*i, x, y);
+	}
+	
+	//这是作者加的版权标识 你可以去掉
+	context.fillText('Powered By: 月影无痕 zhangxugg@163.com', 180, 100);
+}
+
+
+
+drawDepthChart();
+
+</script>
+
+</body>
+</html>
